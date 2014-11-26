@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<extension version="2.5" type="plugin" group="system" method="upgrade">
+<extension version="3.0" type="plugin" group="system" method="upgrade">
 	<name>PLG_SYSTEM_AUTOLOGINIP</name>
 	<author>Yireo</author>
-	<creationDate>December 2013</creationDate>
-	<copyright>Copyright (C) 2013 Yireo.com. All rights reserved.</copyright>
+	<creationDate>November 2014</creationDate>
+	<copyright>Copyright (C) 2014 Yireo.com. All rights reserved.</copyright>
 	<license>http://www.gnu.org/licenses/gpl-3.0.html GNU/GPL</license>
 	<authorEmail>info@yireo.com</authorEmail>
 	<authorUrl>www.yireo.com</authorUrl>
-	<version>1.0.3</version>
+	<version>1.0.4</version>
 	<description>PLG_SYSTEM_AUTOLOGINIP_DESC</description>
 
 	<files>
@@ -24,7 +24,7 @@
         <fields name="params">
             <fieldset name="basic">
                 <field name="ip" type="textarea" default="" label="PLG_SYSTEM_AUTOLOGINIP_FIELD_IP" description="PLG_SYSTEM_AUTOLOGINIP_FIELD_IP_DESC" />
-                <field name="userid" type="text" default="" label="PLG_SYSTEM_AUTOLOGINIP_FIELD_USERID" description="PLG_SYSTEM_AUTOLOGINIP_FIELD_USERID_DESC" />
+                <field name="userid" type="user" default="" label="PLG_SYSTEM_AUTOLOGINIP_FIELD_USERID" description="PLG_SYSTEM_AUTOLOGINIP_FIELD_USERID_DESC" />
                 <field name="redirect" type="menuitem" default="" label="PLG_SYSTEM_AUTOLOGINIP_FIELD_REDIRECT" description="PLG_SYSTEM_AUTOLOGINIP_FIELD_REDIRECT_DESC">
                     <option value="">JNONE</option>
                 </field>
