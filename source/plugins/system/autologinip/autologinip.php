@@ -3,7 +3,7 @@
  * Joomla! System plugin - Auto Login IP
  *
  * @author     Yireo <info@yireo.com>
- * @copyright  Copyright 2014 Yireo.com. All rights reserved
+ * @copyright  Copyright 2015 Yireo.com. All rights reserved
  * @license    GNU Public License
  * @link       http://www.yireo.com
  */
@@ -31,8 +31,10 @@ class plgSystemAutoLoginIp extends JPlugin
 		$jinput = $app->input;
 		$user = JFactory::getUser();
 
-		// Only allow usage from within the frontend
-		if ($app->getName() != 'site')
+		// Only allow usage from within the right app
+        $allowedApp = $this->params->get('application', 'site');
+        
+		if ($app->getName() != $allowedApp && $allowedApp != 'both')
 		{
 			return;
 		}
