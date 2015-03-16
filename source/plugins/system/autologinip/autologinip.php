@@ -34,7 +34,7 @@ class plgSystemAutoLoginIp extends JPlugin
 		// Only allow usage from within the right app
         $allowedApp = $this->params->get('application', 'site');
         
-		if ($app->getName() != $allowedApp && $allowedApp != 'both')
+		if ($app->getName() != $allowedApp && !in_array($allowedApp, array('both', 'all')))
 		{
 			return;
 		}
