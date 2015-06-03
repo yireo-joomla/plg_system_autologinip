@@ -17,7 +17,7 @@ jimport('joomla.plugin.plugin');
 /**
  * IP Authentication System Plugin
  */
-class plgSystemAutoLoginIp extends JPlugin
+class PlgSystemAutoLoginIp extends JPlugin
 {
 	/**
 	 * Catch the event onAfterInitialise
@@ -32,8 +32,8 @@ class plgSystemAutoLoginIp extends JPlugin
 		$user = JFactory::getUser();
 
 		// Only allow usage from within the right app
-        $allowedApp = $this->params->get('application', 'site');
-        
+		$allowedApp = $this->params->get('application', 'site');
+
 		if ($app->getName() != $allowedApp && !in_array($allowedApp, array('both', 'all')))
 		{
 			return;
@@ -57,6 +57,12 @@ class plgSystemAutoLoginIp extends JPlugin
 		$type = $jinput->getCmd('type');
 
 		if (in_array($format, array('raw', 'feed')) || in_array($type, array('rss', 'atom')) || $tmpl == 'component')
+		{
+			return;
+		}
+
+		// Check for the cookie
+		if ($app->input->cookie->get('autologinip') == 1)
 		{
 			return;
 		}
@@ -152,10 +158,14 @@ class plgSystemAutoLoginIp extends JPlugin
 		$response->error_message = null;
 
 		// Authorise this response
-		$authorisations = $authenticate->authorise($response, $options);
+		$authenticate->authorise($response, $options);
 
 		// Run the login-event
-		$results = $app->triggerEvent('onUserLogin', array((array) $response, $options));
+		$app->triggerEvent('onUserLogin', array((array) $response, $options));
+
+		// Set a cookie so that we don't do this twice
+		$cookie = $app->input->cookie;
+		$cookie->set('autologinip', 1, 0);
 
 		// Redirect if needed
 		if (!empty($redirect))
@@ -169,7 +179,7 @@ class plgSystemAutoLoginIp extends JPlugin
 	/**
 	 * Helper-method to match a string against the current IP
 	 *
-	 * @param   string  $ip  IP address
+	 * @param   string $ip IP address
 	 *
 	 * @return bool
 	 */
@@ -184,7 +194,7 @@ class plgSystemAutoLoginIp extends JPlugin
 		}
 
 		// Current IP
-		$currentIp = $_SERVER['REMOTE_ADDR'];
+		$currentIp = $this->getIpAddress();
 
 		// Handle multiple definitions
 		$ips = explode(',', $ip);
@@ -253,5 +263,43 @@ class plgSystemAutoLoginIp extends JPlugin
 		}
 
 		return false;
+	}
+
+	/**
+	 * Return the current IP address
+	 *
+	 * @return  string
+ 	 */
+	protected function getIpAddress()
+	{
+		$ip = $_SERVER['REMOTE_ADDR'];
+
+		// Fix the IP-address
+		if (!empty($_SERVER['HTTP_CLIENT_IP']))
+		{
+			$ip = $_SERVER['HTTP_CLIENT_IP'];
+		}
+		elseif (!empty($_SERVER['HTTP_X_FORWARDED']))
+		{
+			$ip = $_SERVER['HTTP_X_FORWARDED'];
+
+		}
+		elseif (!empty($_SERVER['HTTP_FORWARDED_FOR']))
+		{
+			$ip = $_SERVER['HTTP_FORWARDED_FOR'];
+
+		}
+		elseif (!empty($_SERVER['HTTP_CF_CONNECTING_IP']))
+		{
+			$ip = $_SERVER['HTTP_CF_CONNECTING_IP'];
+
+		}
+		elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))
+		{
+			$iplist = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
+			$ip = array_shift($iplist);
+		}
+
+		return $ip;
 	}
 }
