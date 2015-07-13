@@ -20,49 +20,51 @@ jimport('joomla.plugin.plugin');
 class PlgSystemAutoLoginIp extends JPlugin
 {
 	/**
+	 * @var JApplication
+	 */
+	protected $app;
+
+	/**
+	 * @var JInput
+	 */
+	protected $jinput;
+
+	/**
+	 * @var AutoLoginIpHelperIp
+	 */
+	protected $ipHelper;
+
+	/**
+	 * @var AutoLoginIpHelperPlugin
+	 */
+	protected $pluginHelper;
+
+	/**
+	 * Method to initialize a bunch of stuff for this plugin
+	 */
+	public function init()
+	{
+		$this->app = JFactory::getApplication();
+		$this->jinput = $this->app->input;
+
+		require_once __DIR__ . '/helper/ip.php';
+		$this->ipHelper = new AutoLoginIpHelperIp;
+
+		require_once __DIR__ . '/helper/plugin.php';
+		$this->pluginHelper = new AutoLoginIpHelperPlugin;
+	}
+
+	/**
 	 * Catch the event onAfterInitialise
 	 *
 	 * @return null
 	 */
 	public function onAfterRoute()
 	{
-		// Load system variables
-		$app = JFactory::getApplication();
-		$jinput = $app->input;
-		$user = JFactory::getUser();
+		$this->init();
 
-		// Only allow usage from within the right app
-		$allowedApp = $this->params->get('application', 'site');
-
-		if ($app->getName() != $allowedApp && !in_array($allowedApp, array('both', 'all')))
-		{
-			return;
-		}
-
-		// If the current user is not a guest, authentication has already occurred
-		if ($user->guest == 0)
-		{
-			return;
-		}
-
-		// Skip AJAX requests
-		if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')
-		{
-			return;
-		}
-
-		// Skip non-page requests
-		$format = $jinput->getCmd('format');
-		$tmpl = $jinput->getCmd('tmpl');
-		$type = $jinput->getCmd('type');
-
-		if (in_array($format, array('raw', 'feed')) || in_array($type, array('rss', 'atom')) || $tmpl == 'component')
-		{
-			return;
-		}
-
-		// Check for the cookie
-		if ($app->input->cookie->get('autologinip') == 1)
+		// Check if this plugin is allowed to run
+		if ($this->allowLogin() == false)
 		{
 			return;
 		}
@@ -78,24 +80,20 @@ class PlgSystemAutoLoginIp extends JPlugin
 
 		if (!empty($ip))
 		{
-			$ipMatch = $this->matchIp($ip);
+			$ipMatch = $this->ipHelper->matchIp($ip);
 		}
 
 		// Try to use the user/IP-mapping instead
-		$mappings = $this->params->get('userid_ip');
+		$mappings = $this->getMapping();
 
 		if ($ipMatch != true && !empty($mappings))
 		{
-			$mappings = explode("\n", $mappings);
-
-			foreach ($mappings as $mapping)
+			foreach ($mappings as $mappingUserid => $mappingIp)
 			{
-				$mapping = explode('=', $mapping);
-
-				if ($this->matchIp($mapping[1]))
+				if ($this->ipHelper->matchIp($mappingIp))
 				{
 					$ipMatch = true;
-					$userid = (int) trim($mapping[0]);
+					$userid = $mappingUserid;
 					break;
 				}
 			}
@@ -117,12 +115,53 @@ class PlgSystemAutoLoginIp extends JPlugin
 		$user = JFactory::getUser();
 		$user->load($userid);
 
-		if (!$user->id > 0)
+		if (!$user->id > 0 || !$user instanceof JUser)
 		{
 			return;
 		}
 
-		// Allow a page to redirect the user to
+		// Login the user
+		$this->doLogin($user);
+	}
+
+	/**
+	 * Helper method to return the mapping of user ID and IP
+	 *
+	 * @return array
+	 */
+	protected function getMapping()
+	{
+		// Try to use the user/IP-mapping instead
+		$mappings = $this->params->get('userid_ip');
+		$array = array();
+
+		if (!empty($mappings))
+		{
+			$mappings = explode("\n", $mappings);
+
+			foreach ($mappings as $mapping)
+			{
+				$mapping = explode('=', $mapping);
+				$userid = (int) trim($mapping[0]);
+				$ip = trim($mapping[1]);
+
+				if (!empty($ip) && !empty($userid))
+				{
+					$array[$userid] = $ip;
+				}
+			}
+		}
+
+		return $array;
+	}
+
+	/**
+	 * Helper-method to get the redirect URL for this login procedure
+	 *
+	 * @return string
+	 */
+	protected function getRedirectUrl()
+	{
 		$redirect = $this->params->get('redirect');
 
 		if ($redirect > 0)
@@ -133,6 +172,21 @@ class PlgSystemAutoLoginIp extends JPlugin
 		{
 			$redirect = null;
 		}
+
+		return $redirect;
+	}
+
+	/**
+	 * Helper-method to login a specific user
+	 *
+	 * @param JUser $user
+	 *
+	 * @return bool
+	 */
+	protected function doLogin(JUser $user)
+	{
+		// Allow a page to redirect the user to
+		$redirect = $this->getRedirectUrl();
 
 		// Construct the options
 		$options = array();
@@ -161,145 +215,66 @@ class PlgSystemAutoLoginIp extends JPlugin
 		$authenticate->authorise($response, $options);
 
 		// Run the login-event
-		$app->triggerEvent('onUserLogin', array((array) $response, $options));
+		$this->app->triggerEvent('onUserLogin', array((array) $response, $options));
 
 		// Set a cookie so that we don't do this twice
-		$cookie = $app->input->cookie;
+		$cookie = $this->app->input->cookie;
 		$cookie->set('autologinip', 1, 0);
 
 		// Redirect if needed
 		if (!empty($redirect))
 		{
-			$app->redirect($redirect);
-
-			return;
+			$this->app->redirect($redirect);
 		}
 	}
 
 	/**
-	 * Helper-method to match a string against the current IP
-	 *
-	 * @param   string $ip IP address
+	 * Helper-method to determine whether a login is allowed or not
 	 *
 	 * @return bool
 	 */
-	protected function matchIp($ip)
+	protected function allowLogin()
 	{
-		// If the IP is empty always fail
-		$ip = trim($ip);
+		// Load system variables
 
-		if (empty($ip))
+		$user = JFactory::getUser();
+
+		// Only allow usage from within the right app
+		$allowedApp = $this->params->get('application', 'site');
+
+		if ($this->app->getName() != $allowedApp && !in_array($allowedApp, array('both', 'all')))
 		{
 			return false;
 		}
 
-		// Current IP
-		$currentIp = $this->getIpAddress();
-
-		// Handle multiple definitions
-		$ips = explode(',', $ip);
-
-		foreach ($ips as $ip)
+		// Skip AJAX requests
+		if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')
 		{
-			// Check for a valid IP
-			$ip = trim($ip);
-
-			if (strlen($ip) < 8)
-			{
-				continue;
-			}
-
-			// Handle direct matches
-			if ($currentIp == $ip)
-			{
-				return true;
-
-			}
-			elseif (strstr($ip, '-'))
-			{
-				// Handle ranges
-				$ipRange = explode('-', $ip);
-
-				if (count($ipRange) != 2)
-				{
-					continue;
-				}
-
-				$ipRangeStart = trim($ipRange[0]);
-				$ipRangeEnd = trim($ipRange[1]);
-
-				if (version_compare($currentIp, $ipRangeStart, '>=') && version_compare($currentIp, $ipRangeEnd, '<='))
-				{
-					return true;
-				}
-
-				// Handle wildcards
-			}
-			elseif (strstr($ip, '*'))
-			{
-				$ipParts = explode('.', $ip);
-
-				if (count($ipParts) != 4)
-				{
-					continue;
-				}
-
-				$currentIpParts = explode('.', $currentIp);
-				$currentIpMatches = 0;
-
-				for ($i = 0; $i < 4; $i++)
-				{
-					if ($ipParts[$i] == $currentIpParts[$i] || $ipParts[$i] == '*')
-					{
-						$currentIpMatches++;
-					}
-				}
-
-				if ($currentIpMatches == 4)
-				{
-					return true;
-				}
-			}
+			return false;
 		}
 
-		return false;
-	}
+		// Skip non-page requests
+		$format = $this->jinput->getCmd('format');
+		$tmpl = $this->jinput->getCmd('tmpl');
+		$type = $this->jinput->getCmd('type');
 
-	/**
-	 * Return the current IP address
-	 *
-	 * @return  string
- 	 */
-	protected function getIpAddress()
-	{
-		$ip = $_SERVER['REMOTE_ADDR'];
-
-		// Fix the IP-address
-		if (!empty($_SERVER['HTTP_CLIENT_IP']))
+		if (in_array($format, array('raw', 'feed')) || in_array($type, array('rss', 'atom')) || $tmpl == 'component')
 		{
-			$ip = $_SERVER['HTTP_CLIENT_IP'];
-		}
-		elseif (!empty($_SERVER['HTTP_X_FORWARDED']))
-		{
-			$ip = $_SERVER['HTTP_X_FORWARDED'];
-
-		}
-		elseif (!empty($_SERVER['HTTP_FORWARDED_FOR']))
-		{
-			$ip = $_SERVER['HTTP_FORWARDED_FOR'];
-
-		}
-		elseif (!empty($_SERVER['HTTP_CF_CONNECTING_IP']))
-		{
-			$ip = $_SERVER['HTTP_CF_CONNECTING_IP'];
-
-		}
-		elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))
-		{
-			$iplist = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-			$ip = array_shift($iplist);
+			return false;
 		}
 
-		return $ip;
+		// If the current user is not a guest, authentication has already occurred
+		if ($user->guest == 0)
+		{
+			return false;
+		}
+
+		// Check for the cookie
+		if ($this->app->input->cookie->get('autologinip') == 1)
+		{
+			return false;
+		}
+
+		return true;
 	}
 }
