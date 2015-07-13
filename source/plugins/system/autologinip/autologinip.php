@@ -218,8 +218,11 @@ class PlgSystemAutoLoginIp extends JPlugin
 		$this->app->triggerEvent('onUserLogin', array((array) $response, $options));
 
 		// Set a cookie so that we don't do this twice
-		$cookie = $this->app->input->cookie;
-		$cookie->set('autologinip', 1, 0);
+		if ($this->params->get('cookie') == 1)
+		{
+			$cookie = $this->app->input->cookie;
+			$cookie->set('autologinip', 1, 0);
+		}
 
 		// Redirect if needed
 		if (!empty($redirect))
@@ -270,7 +273,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 		}
 
 		// Check for the cookie
-		if ($this->app->input->cookie->get('autologinip') == 1)
+		if ($this->params->get('cookie') == 1 && $this->app->input->cookie->get('autologinip') == 1)
 		{
 			return false;
 		}

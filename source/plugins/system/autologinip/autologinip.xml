@@ -34,6 +34,11 @@
                     <option value="admin">PLG_SYSTEM_AUTOLOGINIP_FIELD_APPLICATION_OPTION_ADMIN</option>
                     <option value="all">PLG_SYSTEM_AUTOLOGINIP_FIELD_APPLICATION_OPTION_ALL</option>
                 </field>
+                <field name="cookie" type="list" default="1" label="PLG_SYSTEM_AUTOLOGINIP_FIELD_COOKIE"
+                       description="PLG_SYSTEM_AUTOLOGINIP_FIELD_COOKIE_DESC">
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
             </fieldset>
             <fieldset name="advanced">
                 <field name="userid_ip" type="textarea" default="" label="PLG_SYSTEM_AUTOLOGINIP_FIELD_USERID_IP" description="PLG_SYSTEM_AUTOLOGINIP_FIELD_USERID_IP_DESC" />
