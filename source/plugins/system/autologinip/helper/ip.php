@@ -45,7 +45,7 @@ class AutoLoginIpHelperIp
 			// Check for a valid IP
 			$ip = trim($ip);
 
-			if (strlen($ip) < 8)
+			if (strlen($ip) < 3)
 			{
 				continue;
 			}
