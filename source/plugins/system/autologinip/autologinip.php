@@ -3,9 +3,9 @@
  * Joomla! System plugin - Auto Login IP
  *
  * @author     Yireo <info@yireo.com>
- * @copyright  Copyright 2015 Yireo.com. All rights reserved
+ * @copyright  Copyright 2016 Yireo.com. All rights reserved
  * @license    GNU Public License
- * @link       http://www.yireo.com
+ * @link       https://www.yireo.com
  */
 
 // No direct access
@@ -20,19 +20,29 @@ jimport('joomla.plugin.plugin');
 class PlgSystemAutoLoginIp extends JPlugin
 {
 	/**
-	 * @var JApplication
+	 * @var JApplicationCms
 	 */
 	protected $app;
 
 	/**
 	 * @var JInput
 	 */
-	protected $jinput;
+	protected $input;
 
 	/**
 	 * @var AutoLoginIpHelperIp
 	 */
 	protected $ipHelper;
+
+	/**
+	 * @var boolean
+	 */
+	protected $ipMatch = false;
+
+	/**
+	 * @var int
+	 */
+	protected $userId = 0;
 
 	/**
 	 * @var AutoLoginIpHelperPlugin
@@ -45,13 +55,13 @@ class PlgSystemAutoLoginIp extends JPlugin
 	public function init()
 	{
 		$this->app = JFactory::getApplication();
-		$this->jinput = $this->app->input;
+		$this->input = $this->app->input;
 
 		require_once __DIR__ . '/helper/ip.php';
 		$this->ipHelper = new AutoLoginIpHelperIp;
 
 		require_once __DIR__ . '/helper/plugin.php';
-		$this->pluginHelper = new AutoLoginIpHelperPlugin;
+		$this->pluginHelper = new AutoLoginIpHelperPlugin($this->params);
 	}
 
 	/**
@@ -69,53 +79,18 @@ class PlgSystemAutoLoginIp extends JPlugin
 			return;
 		}
 
-		// Initialize the IP-match
-		$ipMatch = false;
-
-		// Initialize the user-ID
-		$userid = trim($this->params->get('userid'));
-
-		// Check for an IP-match for the main IP-parameter
-		$ip = $this->params->get('ip');
-
-		if (!empty($ip))
-		{
-			$ipMatch = $this->ipHelper->matchIp($ip);
-		}
-
-		// Try to use the user/IP-mapping instead
-		$mappings = $this->getMapping();
-
-		if ($ipMatch != true && !empty($mappings))
-		{
-			foreach ($mappings as $mappingUserid => $mappingIp)
-			{
-				if ($this->ipHelper->matchIp($mappingIp))
-				{
-					$ipMatch = true;
-					$userid = $mappingUserid;
-					break;
-				}
-			}
-		}
+		$this->matchIp();
 
 		// If no IP-match was found, don't do anything else
-		if ($ipMatch == false)
-		{
-			return;
-		}
-
-		// Check for an userid
-		if (empty($userid) && $userid < 1)
+		if ($this->ipMatch == false)
 		{
 			return;
 		}
 
 		// Load the user
-		$user = JFactory::getUser();
-		$user->load($userid);
+		$user = $this->loadUser();
 
-		if (!$user->id > 0 || !$user instanceof JUser)
+		if ($user == false)
 		{
 			return;
 		}
@@ -125,34 +100,67 @@ class PlgSystemAutoLoginIp extends JPlugin
 	}
 
 	/**
-	 * Helper method to return the mapping of user ID and IP
-	 *
-	 * @return array
+	 * @return bool|JUser
 	 */
-	protected function getMapping()
+	protected function loadUser()
 	{
+		// Check for an userid
+		if (empty($this->userId) && $this->userId < 1)
+		{
+			return false;
+		}
+
+		// Load the user
+		$user = JFactory::getUser();
+		$user->load($this->userId);
+
+		if (!$user->id > 0 || !$user instanceof JUser)
+		{
+			return false;
+		}
+
+		return $user;
+	}
+
+	/**
+	 * @return bool
+	 */
+	protected function matchIp()
+	{
+		// Initialize the user-ID
+		$this->userId = trim($this->params->get('userid'));
+
+		// Check for an IP-match for the main IP-parameter
+		$ip = $this->params->get('ip');
+
+		if (!empty($ip))
+		{
+			$this->ipMatch = $this->ipHelper->matchIp($ip);
+
+			return true;
+		}
+
 		// Try to use the user/IP-mapping instead
-		$mappings = $this->params->get('userid_ip');
-		$array = array();
+		$mappings = $this->pluginHelper->getMapping();
 
 		if (!empty($mappings))
 		{
-			$mappings = explode("\n", $mappings);
-
 			foreach ($mappings as $mapping)
 			{
-				$mapping = explode('=', $mapping);
-				$userid = (int) trim($mapping[0]);
-				$ip = trim($mapping[1]);
+				$mappingUserid = $mapping['user'];
+				$mappingIp = $mapping['ip'];
 
-				if (!empty($ip) && !empty($userid))
+				if ($this->ipHelper->matchIp($mappingIp))
 				{
-					$array[$userid] = $ip;
+					$this->ipMatch = true;
+					$this->userId = $mappingUserid;
+
+					return true;
 				}
 			}
 		}
 
-		return $array;
+		return false;
 	}
 
 	/**
@@ -239,16 +247,15 @@ class PlgSystemAutoLoginIp extends JPlugin
 	protected function allowLogin()
 	{
 		// Load system variables
-
 		$user = JFactory::getUser();
 
 		// Only allow usage from within the right app
 		$allowedApp = $this->params->get('application', 'site');
 
-        if ($allowedApp == 'admin')
-        {
-            $allowedApp = 'administrator';
-        }
+		if ($allowedApp == 'admin')
+		{
+			$allowedApp = 'administrator';
+		}
 
 		if ($this->app->getName() != $allowedApp && !in_array($allowedApp, array('both', 'all')))
 		{
@@ -256,17 +263,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 		}
 
 		// Skip AJAX requests
-		if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')
-		{
-			return false;
-		}
-
-		// Skip non-page requests
-		$format = $this->jinput->getCmd('format');
-		$tmpl = $this->jinput->getCmd('tmpl');
-		$type = $this->jinput->getCmd('type');
-
-		if (in_array($format, array('raw', 'feed')) || in_array($type, array('rss', 'atom')) || $tmpl == 'component')
+		if ($this->isAjaxRequest())
 		{
 			return false;
 		}
@@ -284,5 +281,29 @@ class PlgSystemAutoLoginIp extends JPlugin
 		}
 
 		return true;
+	}
+
+	/**
+	 * Check whether the current request is an AJAX or AHAH request
+	 *
+	 * @return bool
+	 */
+	protected function isAjaxRequest()
+	{
+		if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')
+		{
+			return true;
+		}
+
+		$format = $this->input->getCmd('format');
+		$tmpl = $this->input->getCmd('tmpl');
+		$type = $this->input->getCmd('type');
+
+		if (in_array($format, array('raw', 'feed')) || in_array($type, array('rss', 'atom')) || $tmpl == 'component')
+		{
+			return true;
+		}
+
+		return false;
 	}
 }

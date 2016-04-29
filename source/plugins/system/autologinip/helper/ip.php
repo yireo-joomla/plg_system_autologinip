@@ -16,7 +16,6 @@ defined('_JEXEC') or die('Restricted access');
  */
 class AutoLoginIpHelperIp
 {
-
 	/**
 	 * Helper-method to match a string against the current IP
 	 *
@@ -42,65 +41,108 @@ class AutoLoginIpHelperIp
 
 		foreach ($ips as $ip)
 		{
-			// Check for a valid IP
-			$ip = trim($ip);
+			$this->matchIpPattern($ip, $currentIp);
+		}
 
-			if (strlen($ip) < 3)
+		return false;
+	}
+
+	/**
+	 * Match a single IP string against the current IP
+	 *
+	 * @param $ip
+	 * @param $currentIp
+	 *
+	 * @return bool
+	 */
+	public function matchIpPattern($ip, $currentIp)
+	{
+		// Check for a valid IP
+		$ip = trim($ip);
+
+		if (strlen($ip) < 3)
+		{
+			return false;
+		}
+
+		// Handle direct matches
+		if ($currentIp == $ip)
+		{
+			return true;
+		}
+
+		if (strstr($ip, '-') && $this->isIpRangeMatch($ip, $currentIp))
+		{
+			return true;
+		}
+
+		if (strstr($ip, '*') && $this->isIpRangeMatch($ip, $currentIp))
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Match whether the IP matches a wildcard range (127.0.0.*)
+	 *
+	 * @param $ip
+	 * @param $currentIp
+	 *
+	 * @return bool
+	 */
+	public function isIpWildcardMatch($ip, $currentIp)
+	{
+		$ipParts = explode('.', $ip);
+
+		if (count($ipParts) != 4)
+		{
+			return false;
+		}
+
+		$currentIpParts = explode('.', $currentIp);
+		$currentIpMatches = 0;
+
+		for ($i = 0; $i < 4; $i++)
+		{
+			if ($ipParts[$i] == $currentIpParts[$i] || $ipParts[$i] == '*')
 			{
-				continue;
+				$currentIpMatches++;
 			}
+		}
 
-			// Handle direct matches
-			if ($currentIp == $ip)
-			{
-				return true;
+		if ($currentIpMatches == 4)
+		{
+			return true;
+		}
 
-			}
-			elseif (strstr($ip, '-'))
-			{
-				// Handle ranges
-				$ipRange = explode('-', $ip);
+		return false;
+	}
 
-				if (count($ipRange) != 2)
-				{
-					continue;
-				}
+	/**
+	 * Match whether the IP sits within an IP range (127.0.0.1-127.0.0.9)
+	 *
+	 * @param $ip
+	 * @param $currentIp
+	 *
+	 * @return bool
+	 */
+	public function isIpRangeMatch($ip, $currentIp)
+	{
+		$ipRange = explode('-', $ip);
 
-				$ipRangeStart = trim($ipRange[0]);
-				$ipRangeEnd = trim($ipRange[1]);
+		if (count($ipRange) != 2)
+		{
+			return false;
+		}
 
-				if (version_compare($currentIp, $ipRangeStart, '>=') && version_compare($currentIp, $ipRangeEnd, '<='))
-				{
-					return true;
-				}
+		$ipRangeStart = trim($ipRange[0]);
+		$ipRangeEnd = trim($ipRange[1]);
 
-				// Handle wildcards
-			}
-			elseif (strstr($ip, '*'))
-			{
-				$ipParts = explode('.', $ip);
-
-				if (count($ipParts) != 4)
-				{
-					continue;
-				}
-
-				$currentIpParts = explode('.', $currentIp);
-				$currentIpMatches = 0;
-
-				for ($i = 0; $i < 4; $i++)
-				{
-					if ($ipParts[$i] == $currentIpParts[$i] || $ipParts[$i] == '*')
-					{
-						$currentIpMatches++;
-					}
-				}
-
-				if ($currentIpMatches == 4)
-				{
-					return true;
-				}
-			}
+		if (version_compare($currentIp, $ipRangeStart, '>=') && version_compare($currentIp, $ipRangeEnd, '<='))
+		{
+			return true;
 		}
 
 		return false;
@@ -118,24 +160,26 @@ class AutoLoginIpHelperIp
 		// Fix the IP-address
 		if (!empty($_SERVER['HTTP_CLIENT_IP']))
 		{
-			$ip = $_SERVER['HTTP_CLIENT_IP'];
+			return $_SERVER['HTTP_CLIENT_IP'];
 		}
-		elseif (!empty($_SERVER['HTTP_X_FORWARDED']))
+
+		if (!empty($_SERVER['HTTP_X_FORWARDED']))
 		{
-			$ip = $_SERVER['HTTP_X_FORWARDED'];
+			return $_SERVER['HTTP_X_FORWARDED'];
+		}
+
+		if (!empty($_SERVER['HTTP_FORWARDED_FOR']))
+		{
+			return $_SERVER['HTTP_FORWARDED_FOR'];
+		}
+
+		if (!empty($_SERVER['HTTP_CF_CONNECTING_IP']))
+		{
+			return $_SERVER['HTTP_CF_CONNECTING_IP'];
 
 		}
-		elseif (!empty($_SERVER['HTTP_FORWARDED_FOR']))
-		{
-			$ip = $_SERVER['HTTP_FORWARDED_FOR'];
 
-		}
-		elseif (!empty($_SERVER['HTTP_CF_CONNECTING_IP']))
-		{
-			$ip = $_SERVER['HTTP_CF_CONNECTING_IP'];
-
-		}
-		elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))
+		if (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))
 		{
 			$iplist = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
 			$ip = array_shift($iplist);
