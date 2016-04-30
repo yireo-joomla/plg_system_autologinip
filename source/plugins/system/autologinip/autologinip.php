@@ -137,7 +137,10 @@ class PlgSystemAutoLoginIp extends JPlugin
 		{
 			$this->ipMatch = $this->ipHelper->matchIp($ip);
 
-			return true;
+			if ($this->ipMatch)
+			{
+				return true;
+			}
 		}
 
 		// Try to use the user/IP-mapping instead

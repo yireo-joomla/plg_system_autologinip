@@ -41,7 +41,12 @@ class AutoLoginIpHelperIp
 
 		foreach ($ips as $ip)
 		{
-			$this->matchIpPattern($ip, $currentIp);
+			$rt = $this->matchIpPattern($ip, $currentIp);
+
+			if ($rt == true)
+			{
+				return true;
+			}
 		}
 
 		return false;
