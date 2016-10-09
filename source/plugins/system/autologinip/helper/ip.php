@@ -43,7 +43,7 @@ class AutoLoginIpHelperIp
 		{
 			$rt = $this->matchIpPattern($ip, $currentIp);
 
-			if ($rt == true)
+			if ($rt === true)
 			{
 				return true;
 			}
@@ -81,7 +81,7 @@ class AutoLoginIpHelperIp
 			return true;
 		}
 
-		if (strstr($ip, '*') && $this->isIpRangeMatch($ip, $currentIp))
+		if (strstr($ip, '*') && $this->isIpWildcardMatch($ip, $currentIp))
 		{
 			return true;
 		}

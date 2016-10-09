@@ -74,7 +74,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 		$this->init();
 
 		// Check if this plugin is allowed to run
-		if ($this->allowLogin() == false)
+		if ($this->allowLogin() === false)
 		{
 			return;
 		}
@@ -82,7 +82,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 		$this->matchIp();
 
 		// If no IP-match was found, don't do anything else
-		if ($this->ipMatch == false)
+		if ($this->ipMatch === false)
 		{
 			return;
 		}
@@ -90,7 +90,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 		// Load the user
 		$user = $this->loadUser();
 
-		if ($user == false)
+		if ($user === false)
 		{
 			return;
 		}
@@ -181,7 +181,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 		}
 		else
 		{
-			$redirect = null;
+			$redirect = '';
 		}
 
 		return $redirect;
@@ -260,7 +260,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 			$allowedApp = 'administrator';
 		}
 
-		if ($this->app->getName() != $allowedApp && !in_array($allowedApp, array('both', 'all')))
+		if ($this->app->getName() !== $allowedApp && !in_array($allowedApp, array('both', 'all')))
 		{
 			return false;
 		}
@@ -272,7 +272,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 		}
 
 		// If the current user is not a guest, authentication has already occurred
-		if ($user->guest == 0)
+		if ((bool) $user->guest == false)
 		{
 			return false;
 		}
@@ -293,7 +293,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 	 */
 	protected function isAjaxRequest()
 	{
-		if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')
+		if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
 		{
 			return true;
 		}
@@ -302,7 +302,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 		$tmpl = $this->input->getCmd('tmpl');
 		$type = $this->input->getCmd('type');
 
-		if (in_array($format, array('raw', 'feed')) || in_array($type, array('rss', 'atom')) || $tmpl == 'component')
+		if (in_array($format, array('raw', 'feed')) || in_array($type, array('rss', 'atom')) || $tmpl === 'component')
 		{
 			return true;
 		}
