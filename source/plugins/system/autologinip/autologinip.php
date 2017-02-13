@@ -135,9 +135,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 
 		if (!empty($ip))
 		{
-			$this->ipMatch = $this->ipHelper->matchIp($ip);
-
-			if ($this->ipMatch)
+			if ($this->ipMatch = $this->ipHelper->matchIp($ip))
 			{
 				return true;
 			}

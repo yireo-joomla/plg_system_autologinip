@@ -34,13 +34,18 @@ class AutoLoginIpHelperIp
 		}
 
 		// Current IP
-		$currentIp = $this->getIpAddress();
+		$currentIp = $this->getCurrentIpAddress();
 
 		// Handle multiple definitions
 		$ips = explode(',', $ip);
 
 		foreach ($ips as $ip)
 		{
+            if ($ip === $currentIp)
+            {
+                return true;
+            }
+
 			$rt = $this->matchIpPattern($ip, $currentIp);
 
 			if ($rt === true)
@@ -99,9 +104,10 @@ class AutoLoginIpHelperIp
 	 */
 	public function isIpWildcardMatch($ip, $currentIp)
 	{
+        $ip = str_replace(':', '.', $ip);
 		$ipParts = explode('.', $ip);
 
-		if (count($ipParts) != 4)
+		if (count($ipParts) != 4 && count($ipParts) != 8)
 		{
 			return false;
 		}
@@ -158,7 +164,7 @@ class AutoLoginIpHelperIp
 	 *
 	 * @return  string
 	 */
-	public function getIpAddress()
+	public function getCurrentIpAddress()
 	{
 		$ip = $_SERVER['REMOTE_ADDR'];
 
