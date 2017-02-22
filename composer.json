@@ -1,0 +1,22 @@
+{
+    "name": "yireo/plg-system-autologinip",
+    "type": "joomla-extension",
+    "license": "GPL-3.0",
+    "description": "AutoLoginIp plugin for Joomla",
+    "keywords": [
+        "joomla",
+        "extension",
+        "yireo"
+    ],
+    "homepage": "https://github.com/yireo/plg_system_autologinip",
+    "authors": [
+        {
+            "name": "Yireo",
+            "email": "info@yireo.com",
+            "homepage": "https://www.yireo.com"
+        }
+    ],
+    "require": {
+        "joomlatools/composer": "*"
+    }
+}
