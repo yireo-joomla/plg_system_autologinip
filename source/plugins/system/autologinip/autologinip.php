@@ -67,7 +67,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 	/**
 	 * Catch the event onAfterInitialise
 	 *
-	 * @return null
+	 * @return void
 	 */
 	public function onAfterRoute()
 	{
@@ -100,7 +100,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 	}
 
 	/**
-	 * @return bool|JUser
+	 * @return boolean|JUser
 	 */
 	protected function loadUser()
 	{
@@ -123,7 +123,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 	}
 
 	/**
-	 * @return bool
+	 * @return boolean
 	 */
 	protected function matchIp()
 	{
@@ -190,7 +190,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 	 *
 	 * @param JUser $user
 	 *
-	 * @return bool
+	 * @return boolean
 	 */
 	protected function doLogin(JUser $user)
 	{
@@ -243,7 +243,7 @@ class PlgSystemAutoLoginIp extends JPlugin
 	/**
 	 * Helper-method to determine whether a login is allowed or not
 	 *
-	 * @return bool
+	 * @return boolean
 	 */
 	protected function allowLogin()
 	{

@@ -21,12 +21,13 @@ class AutoLoginIpHelperIp
 	 *
 	 * @param   string $ip IP address
 	 *
-	 * @return bool
+	 * @return boolean
 	 */
 	public function matchIp($ip)
 	{
 		// If the IP is empty always fail
 		$ip = trim($ip);
+		$ip = strtolower($ip);
 
 		if (empty($ip))
 		{
@@ -41,12 +42,19 @@ class AutoLoginIpHelperIp
 
 		foreach ($ips as $ip)
 		{
-            if ($ip === $currentIp)
-            {
-                return true;
-            }
+			if ($ip === $currentIp)
+			{
+				return true;
+			}
 
-			$rt = $this->matchIpPattern($ip, $currentIp);
+			try
+			{
+				$rt = $this->matchIpPattern($ip, $currentIp);
+			}
+			catch (Exception $e)
+			{
+				$rt = false;
+			}
 
 			if ($rt === true)
 			{
@@ -60,10 +68,11 @@ class AutoLoginIpHelperIp
 	/**
 	 * Match a single IP string against the current IP
 	 *
-	 * @param $ip
-	 * @param $currentIp
+	 * @param string $ip
+	 * @param string $currentIp
 	 *
-	 * @return bool
+	 * @return boolean
+	 * @throws Exception
 	 */
 	public function matchIpPattern($ip, $currentIp)
 	{
@@ -72,13 +81,23 @@ class AutoLoginIpHelperIp
 
 		if (strlen($ip) < 3)
 		{
-			return false;
+			throw new \Exception('IP does not match minimum length');
 		}
 
 		// Handle direct matches
 		if ($currentIp == $ip)
 		{
 			return true;
+		}
+
+		if (strstr($currentIp, ':') && strstr($ip, ':'))
+		{
+			$ipParts = explode(':', $currentIp);
+
+			if (count($ipParts) != 8)
+			{
+				$currentIp = $this->ipv6octetify($currentIp);
+			}
 		}
 
 		if (strstr($ip, '-') && $this->isIpRangeMatch($ip, $currentIp))
@@ -95,16 +114,52 @@ class AutoLoginIpHelperIp
 	}
 
 	/**
+	 * Fix IPv6 parts
+	 *
+	 * @param string $currentIp
+	 *
+	 * @return string
+	 */
+	public function ipv6octetify($currentIp)
+	{
+		$ipParts = explode(':', $currentIp);
+		$outIP   = '';
+		$makeUp  = 8 - count($ipParts);
+
+		for ($i = 0; $i < strlen($currentIp); $i++)
+		{
+			if (substr($currentIp, $i, 1) == ':' && $i < strlen($currentIp) && substr($currentIp, ($i + 1), 1) == ':')
+			{
+				for ($b = 0; $b <= $makeUp; $b++)
+				{
+					$outIP .= ':0';
+				}
+			}
+			else
+			{
+				$outIP .= substr($currentIp, $i, 1);
+			}
+		}
+
+		if (substr($outIP, 0, 1) == ':')
+		{
+			$outIP = '0' . $outIP;
+		}
+
+		return $outIP;
+	}
+
+	/**
 	 * Match whether the IP matches a wildcard range (127.0.0.*)
 	 *
-	 * @param $ip
-	 * @param $currentIp
+	 * @param string $ip
+	 * @param string $currentIp
 	 *
 	 * @return bool
 	 */
 	public function isIpWildcardMatch($ip, $currentIp)
 	{
-        $ip = str_replace(':', '.', $ip);
+		$ip      = str_replace(':', '.', $ip);
 		$ipParts = explode('.', $ip);
 
 		if (count($ipParts) != 4 && count($ipParts) != 8)
@@ -112,18 +167,24 @@ class AutoLoginIpHelperIp
 			return false;
 		}
 
-		$currentIpParts = explode('.', $currentIp);
+		$currentIp        = str_replace(':', '.', $currentIp);
+		$currentIpParts   = explode('.', $currentIp);
 		$currentIpMatches = 0;
 
-		for ($i = 0; $i < 4; $i++)
+		for ($i = 0; $i < 8; $i++)
 		{
+			if (!isset($ipParts[$i]))
+			{
+				break;
+			}
+
 			if ($ipParts[$i] == $currentIpParts[$i] || $ipParts[$i] == '*')
 			{
 				$currentIpMatches++;
 			}
 		}
 
-		if ($currentIpMatches == 4)
+		if ($currentIpMatches == 4 || $currentIpMatches == 8)
 		{
 			return true;
 		}
@@ -134,10 +195,11 @@ class AutoLoginIpHelperIp
 	/**
 	 * Match whether the IP sits within an IP range (127.0.0.1-127.0.0.9)
 	 *
-	 * @param $ip
-	 * @param $currentIp
+	 * @param string $ip
+	 * @param string $currentIp
 	 *
 	 * @return bool
+	 * @throws Exception
 	 */
 	public function isIpRangeMatch($ip, $currentIp)
 	{
@@ -145,11 +207,20 @@ class AutoLoginIpHelperIp
 
 		if (count($ipRange) != 2)
 		{
-			return false;
+			throw new \Exception('Range detection only supports 2 arguments');
 		}
 
 		$ipRangeStart = trim($ipRange[0]);
-		$ipRangeEnd = trim($ipRange[1]);
+		$ipRangeEnd   = trim($ipRange[1]);
+
+		$byteIpRangeStart = inet_pton($ipRangeStart);
+		$byteIpRangeEnd = inet_pton($ipRangeEnd);
+		$byteCurrentIp = inet_pton($currentIp);
+
+		if ((strlen($byteCurrentIp) == strlen($byteIpRangeStart))
+			&&  ($byteCurrentIp >= $byteIpRangeStart && $byteCurrentIp <= $byteIpRangeEnd)) {
+			return true;
+		}
 
 		if (version_compare($currentIp, $ipRangeStart, '>=') && version_compare($currentIp, $ipRangeEnd, '<='))
 		{
@@ -193,7 +264,7 @@ class AutoLoginIpHelperIp
 		if (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))
 		{
 			$iplist = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-			$ip = array_shift($iplist);
+			$ip     = array_shift($iplist);
 		}
 
 		return $ip;

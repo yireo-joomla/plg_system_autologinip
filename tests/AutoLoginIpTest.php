@@ -8,10 +8,12 @@
  * @link       https://www.yireo.com/
  */
 
+use Yireo\Test\PluginCase;
+
 /**
  * Class PlgSystemAutoLoginIpTest
  */
-class PlgSystemAutoLoginIpTest extends Yireo_Plugin_TestCase
+class PlgSystemAutoLoginIpTest extends PluginCase
 {
 	/**
 	 * @var string
@@ -24,17 +26,20 @@ class PlgSystemAutoLoginIpTest extends Yireo_Plugin_TestCase
 	protected $pluginGroup = 'system';
 
 	/**
-	 *
+	 * @var array
+	 */
+	protected $pluginParams = [
+		'redirect' => 1,
+	];
+
+	/**
+	 * @return void
 	 */
 	public function testGetRedirectUrl()
 	{
-		//$plugin     = $this->getPluginInstance();
-
-		//$method = $this->getClassMethod('getRedirectUrl');
-		//$obj = new PlgSystemAutoLoginIp($dispatcher, array());
-
-		//$this->assertEmpty($method->invokeArgs($obj));
-
+		$plugin = $this->getPluginInstance();
+		$method = $this->getObjectMethod($plugin, 'getRedirectUrl');
+		$this->assertNotEmpty($method->invokeArgs($plugin, []));
 	}
 }
 
