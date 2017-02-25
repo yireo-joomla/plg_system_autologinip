@@ -2,7 +2,7 @@ Auto Login IP
 =============
 Homepage: https://www.yireo.com/software/joomla-extensions/auto-login-ip
 
-Joomla! plugin for automatically logging in an user, based upon IP.
+Joomla! plugin for automatically logging in a user, based upon IP.
 
 ---
 ## Want to learn how to program Joomla plugins?
