@@ -23,8 +23,13 @@ class AutoLoginIpHelperIp
 	 *
 	 * @return boolean
 	 */
-	public function matchIp($ip)
+	public function matchIp($ip, $currentIp = null)
 	{
+        if (!is_string($ip))
+        {
+			throw new \Exception('Invalid IP address');
+        }
+
 		// If the IP is empty always fail
 		$ip = trim($ip);
 		$ip = strtolower($ip);
@@ -35,7 +40,15 @@ class AutoLoginIpHelperIp
 		}
 
 		// Current IP
-		$currentIp = $this->getCurrentIpAddress();
+        if (empty($currentIp))
+        {
+		    $currentIp = $this->getCurrentIpAddress();
+        }
+
+        if (!is_string($currentIp))
+        {
+			throw new \Exception('Invalid IP address');
+        }
 
 		// Handle multiple definitions
 		$ips = explode(',', $ip);
@@ -76,6 +89,11 @@ class AutoLoginIpHelperIp
 	 */
 	public function matchIpPattern($ip, $currentIp)
 	{
+        if (!is_string($ip) || !is_string($currentIp))
+        {
+			throw new \Exception('Invalid IP address');
+        }
+
 		// Check for a valid IP
 		$ip = trim($ip);
 
@@ -159,6 +177,11 @@ class AutoLoginIpHelperIp
 	 */
 	public function isIpWildcardMatch($ip, $currentIp)
 	{
+        if (!is_string($ip) || !is_string($currentIp))
+        {
+			throw new \Exception('Invalid IP address');
+        }
+
 		$ip      = str_replace(':', '.', $ip);
 		$ipParts = explode('.', $ip);
 
@@ -203,12 +226,22 @@ class AutoLoginIpHelperIp
 	 */
 	public function isIpRangeMatch($ip, $currentIp)
 	{
+        if (!is_string($ip) || !is_string($currentIp))
+        {
+			throw new \Exception('Invalid IP address');
+        }
+
 		$ipRange = explode('-', $ip);
 
 		if (count($ipRange) != 2)
 		{
 			throw new \Exception('Range detection only supports 2 arguments');
 		}
+
+        if (!is_string($ipRange[0]) || !is_string($ipRange[1]))
+        {
+			throw new \Exception('Invalid IP address');
+        }
 
 		$ipRangeStart = trim($ipRange[0]);
 		$ipRangeEnd   = trim($ipRange[1]);

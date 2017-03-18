@@ -128,10 +128,10 @@ class PlgSystemAutoLoginIp extends JPlugin
 	protected function matchIp()
 	{
 		// Initialize the user-ID
-		$this->userId = trim($this->params->get('userid'));
+		$this->userId = $this->pluginHelper->getUserIdFromParams();
 
 		// Check for an IP-match for the main IP-parameter
-		$ip = $this->params->get('ip');
+		$ip = $this->pluginHelper->getIpFromParams();
 
 		if (!empty($ip))
 		{

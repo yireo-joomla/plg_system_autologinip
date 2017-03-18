@@ -2,7 +2,7 @@
 <extension version="3.0" type="plugin" group="system" method="upgrade">
 	<name>PLG_SYSTEM_AUTOLOGINIP</name>
 	<author>Yireo</author>
-	<creationDate>February 2017</creationDate>
+	<creationDate>March 2017</creationDate>
 	<copyright>Copyright 2016 Yireo.com. All rights reserved.</copyright>
 	<license>http://www.gnu.org/licenses/gpl-3.0.html GNU/GPL</license>
 	<authorEmail>info@yireo.com</authorEmail>

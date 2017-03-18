@@ -26,6 +26,7 @@ class AutoLoginIpHelperPlugin
 	 */
 	public function __construct($params)
 	{
+        print_r($params);exit;
 		$this->params = $params;
 	}
 
@@ -40,23 +41,52 @@ class AutoLoginIpHelperPlugin
 		$mappings = $this->params->get('userid_ip');
 		$array = array();
 
-		if (!empty($mappings))
+		if (empty($mappings))
+        {
+            return $array;
+        }
+
+		$mappings = explode("\n", $mappings);
+
+		foreach ($mappings as $mapping)
 		{
-			$mappings = explode("\n", $mappings);
+            if (empty($mapping))
+            {
+                continue;
+            }
 
-			foreach ($mappings as $mapping)
+			$mapping = explode('=', $mapping);
+
+            if (count($mapping) != 2)
+            {
+                continue;
+            }
+
+			$userid = (int) trim($mapping[0]);
+			$ip = trim($mapping[1]);
+
+			if (!empty($ip) && !empty($userid))
 			{
-				$mapping = explode('=', $mapping);
-				$userid = (int) trim($mapping[0]);
-				$ip = trim($mapping[1]);
-
-				if (!empty($ip) && !empty($userid))
-				{
-					$array[] = ['ip' => $ip, 'user' => $userid];
-				}
+				$array[] = ['ip' => $ip, 'user' => $userid];
 			}
 		}
 
 		return $array;
 	}
+
+	/**
+	 * @return int
+	 */
+    protected function getUserIdFromParams()
+    {
+		return trim($this->params->get('userid'));
+    }
+
+	/**
+	 * @return string
+	 */
+    protected function getIpFromParams()
+    {
+		return $this->params->get('ip');
+    }
 }
