@@ -35,6 +35,19 @@ class AutoLoginIpHelperIpTest extends JoomlaCase
 	}
 
 	/**
+	 * @test AutoLoginIpHelperIp::matchIp
+	 * @return void
+	 */
+	public function testMatchBasicIps()
+	{
+		$this->assertTrue($this->target->matchIp('117.120.16.132', '117.120.16.132'));
+		$this->assertFalse($this->target->matchIp('117.120.16.132', '117.120.16.131'));
+		$this->assertFalse($this->target->matchIp('117.120.16.131', '117.120.16.132'));
+		$this->assertFalse($this->target->matchIp('117.120.16.131', '117.120.16.13'));
+		$this->assertFalse($this->target->matchIp('117.120.16.13', '117.120.16.132'));
+    }
+
+	/**
 	 * @test AutoLoginIpHelperIp::matchIpPattern
 	 * @return void
 	 */
