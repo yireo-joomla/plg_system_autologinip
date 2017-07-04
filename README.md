@@ -22,8 +22,8 @@ Authentication is configured with either a simple **IP** field and **Userid** fi
 
 The **Userid-IP** mapping contains a list of newline-seperated mappings that map an userid (on the left) with an IP (on  the right). For instance, the following rules would login anybody on the network `192.168` as Joomla! user with ID `42`, while anybody on the network `192.169` would be logged in as Joomla! user with ID `43`.
 
-   42=192.168.*.*
-   43=192.168.0.0-192.168.0.255
+    42=192.168.*.*
+    43=192.168.0.0-192.168.0.255
 
 ## Security warning
 Ofcourse be aware that there is a security risk. If a hacker decides to spoof your IP-address, he's in. Note that the hacker will still need to guess that AutoLoginIp is actually, and needs to find out your IP. When the hacker is in, he's only logged into the Joomla! frontend (the plugin doesn't do anything in the Joomla! backend). If you're a bit scared of this to happen (whatever), just configure a Joomla! user with limited rights (so, a Registered user, not a Super User).
