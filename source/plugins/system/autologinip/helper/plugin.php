@@ -26,7 +26,6 @@ class AutoLoginIpHelperPlugin
 	 */
 	public function __construct($params)
 	{
-        print_r($params);exit;
 		$this->params = $params;
 	}
 
@@ -77,7 +76,7 @@ class AutoLoginIpHelperPlugin
 	/**
 	 * @return int
 	 */
-    protected function getUserIdFromParams()
+    public function getUserIdFromParams()
     {
 		return trim($this->params->get('userid'));
     }
@@ -85,7 +84,7 @@ class AutoLoginIpHelperPlugin
 	/**
 	 * @return string
 	 */
-    protected function getIpFromParams()
+    public function getIpFromParams()
     {
 		return $this->params->get('ip');
     }
